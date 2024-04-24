@@ -13,9 +13,6 @@ const createToken = (uid, lifetime) => jwt.sign({ uid }, secret, { expiresIn: li
 const createAccess = (uid) => createToken(uid, ACCESS_LIFETIME)
 const createRefresh = (uid) => createToken(uid, REFRESH_LIFETIME)
 
-let userName;
-let userEmail;
-
 exports.signup = async (req, res) => {
     try {
         const authed = await auth.create({
@@ -29,11 +26,9 @@ exports.signup = async (req, res) => {
             name: req.body.name,
             likes: 0
         })
-        
-        userName = req.body.name;
-        userEmail = req.body.email;
 
-        return res.status(201).send({ message: 'registred', uid: createdUser.uid })
+        console.log({ message: `Пользователь ${createdUser.uid} зареган` })
+        return res.status(201).send({ message: 'registred', uid: createdUser.uid }) 
     } catch (error) {
         return res.status(400).send({message: error.message})
     }
@@ -46,16 +41,17 @@ exports.signin = async (req, res) => {
                 email: req.body.email.toLowerCase()
             }
         })
-        if (!user) return res.status(404).send({ message: 'User not found!' })
+        if (!user) return res.status(404).send({ message: 'Пользователь не нйаден!' })
         var passwordIsValid = bcrypt.compareSync(
             req.body.password,
             user.password
         )
-        if (!passwordIsValid) return res.status(414).send({ message: 'Invalid password' })
+        if (!passwordIsValid) return res.status(414).send({ message: 'Неверный пароль' })
         const token = createAccess(user.uid)
         const token_refresh = createRefresh(user.uid)
         await auth.update({AccessToken: token, RefreshToken: token_refresh},
             {where: {uid: user.uid}})
+        console.log({ message: `Пользователь ${user.uid} авторизован` })
         return res.status(200).send({
             uid: user.uid,
             accessToken: token,
@@ -87,24 +83,3 @@ exports.changeAccess = async(req, res) => {
         return res.status(500).send({ message: error.message })
     }
 }
-
-// exports.getInfoUserByUid = async(req,res) => {
-//     try {
-//         const user = await auth.findOne({ 
-//             where: { 
-//                 uid: uid 
-//             } 
-//         })
-//         if(!user) return res.status(404)
-//         const email = user.email;
-//         const role = user.role;
-//         console.log({ message: {role: user.role, email: user.email } })
-//         return res.json({
-//             role: role,
-//             email: email
-//         })
-        
-//     } catch (error) {
-//         return res.status(500).send({ message: error.message })
-//     }
-// }
